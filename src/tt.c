@@ -228,15 +228,15 @@ static void quad(Loop *l, float x0, float y0, float cx, float cy, float x1, floa
 
 static void flatten(Loop *l, const float *x, const float *y, const unsigned char *on, int n) {
     int start = -1, i, guard = 0;
-    float px, py, sx, sy;
+    float px, py;
 
     for (i = 0; i < n; i++) if (on[i]) { start = i; break; }
     if (start < 0) {                      /* all-off contour: rare, skip curve bits */
         for (i = 0; i < n; i++) loop_push(l, x[i], y[i]);
         return;
     }
-    sx = px = x[start];
-    sy = py = y[start];
+    px = x[start];
+    py = y[start];
     loop_push(l, px, py);
     i = start;
     while (guard++ < n + 4) {
@@ -266,7 +266,6 @@ static int load_simple(TtFont *f, const unsigned char *g, unsigned glen, Path *o
     const unsigned char *p = g + 10;
     unsigned *endpts, i;
     int inst;
-    const unsigned char *flags;
     int npts, np;
 
     if (nc <= 0 || (unsigned)(p - g) + (size_t)nc * 2 > glen) return 0;
@@ -280,7 +279,6 @@ static int load_simple(TtFont *f, const unsigned char *g, unsigned glen, Path *o
     if (inst < 0) { free(endpts); return 0; }
     p += inst;
 
-    flags = p;
     /* first pass: flags RLE */
     {
         unsigned char *fl = (unsigned char *)malloc((size_t)npts);
