@@ -1,0 +1,5 @@
+bsod
+*.ppm
+*.bmp
+*.o
+probe*

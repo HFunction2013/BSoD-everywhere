@@ -1,0 +1,100 @@
+name: build
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: build (size first)
+        run: make tiny
+      - name: size
+        run: ls -l bsod && du -b bsod
+      - name: render without a display
+        run: |
+          ./bsod --size 1920x1080 --dump-layout --render ref_1080p.ppm
+          ./bsod --size 1024x768  --render ref_768p.ppm
+          ./bsod --size 640x480   --render ref_480p.ppm
+      - name: upload frames
+        uses: actions/upload-artifact@v4
+        with:
+          name: frames-linux
+          path: |
+            bsod
+            ref_*.ppm
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: build (MSVC)
+        shell: cmd
+        run: |
+          cl /nologo /O1 /Os /GS- /Isrc\include src\*.c /Fe:bsod.exe /link user32.lib gdi32.lib
+      - name: size
+        shell: pwsh
+        run: Get-Item bsod.exe | Select-Object Name,Length
+      - name: render with the real boot face
+        shell: pwsh
+        run: |
+          .\bsod.exe --size 1920x1080 --dump-layout --render bsod_1920x1080.bmp
+          .\bsod.exe --size 1024x768  --render bsod_1024x768.bmp
+          .\bsod.exe --size 1920x1080 --progress 37 --render bsod_stop.bmp `
+            --stop-code IRQL_NOT_LESS_OR_EQUAL --driver nvlddmkm.sys `
+            --params 0x0000000000000000,0x0000000000000002,0x0000000000000001,0xFFFFF80100000000
+      - name: convert frames to png
+        shell: pwsh
+        run: |
+          python -c "from PIL import Image; import glob; [Image.open(f).save(f.replace('.bmp','.png')) for f in glob.glob('bsod_*.bmp')]"
+      - name: upload frames
+        uses: actions/upload-artifact@v4
+        with:
+          name: frames-windows
+          path: |
+            bsod.exe
+            bsod_*.bmp
+            bsod_*.png
+
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: build (clang, headless only)
+        run: make tiny CFLAGS="-std=c11 -Isrc/include -Os -DNDEBUG -DNO_WINDOW -Wall -Wextra -Wno-unused-parameter -Wno-unused-function"
+      - name: size
+        run: ls -l bsod
+      - name: render with a substitute face
+        run: ./bsod --size 1920x1080 --font /System/Library/Fonts/Supplemental/Arial.ttf --render ref_macos.ppm
+      - name: upload frames
+        uses: actions/upload-artifact@v4
+        with:
+          name: frames-macos
+          path: |
+            bsod
+            ref_macos.ppm
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [ linux, windows, macos ]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+      - name: checksums
+        run: |
+          find . -name 'bsod' -o -name 'bsod.exe' | while read f; do sha256sum "$f"; done > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            frames-linux/bsod
+            frames-windows/bsod.exe
+            SHA256SUMS.txt
+          generate_release_notes: true
