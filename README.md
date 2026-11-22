@@ -158,3 +158,14 @@ MIT — see [LICENSE](LICENSE).
 * **字体不打包**：Windows 上自动用 `C:\Windows\Boot\Fonts\segoe_slboot.ttf`（这才是
   `BgpFoInitialize` 真正加载的那一版），其它平台请 `--font` 指过去，否则换行会不同。
 * 逆向全过程、显示表字段语义、栅格器对照见 [`docs/`](docs/)。
+
+## Trademarks
+
+```
+-- 
+
+This project reproduces the visual appearance of a Windows bugcheck screen for
+research, testing and UI-prototyping purposes. "Windows" and the Windows boot
+fonts are trademarks and copyrighted works of Microsoft Corporation; no font
+data is distributed with this source tree.
+```

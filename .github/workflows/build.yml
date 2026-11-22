@@ -96,13 +96,16 @@ jobs:
       - uses: actions/download-artifact@v4
       - name: checksums
         run: |
-          find . -name 'bsod' -o -name 'bsod.exe' | while read f; do sha256sum "$f"; done > SHA256SUMS.txt
+          mkdir -p dist
+          cp frames-linux/bsod        dist/bsod-linux
+          cp frames-macos/bsod        dist/bsod-macos
+          cp frames-windows/bsod.exe  dist/bsod-windows.exe
+          ls -l dist
+          ( cd dist && sha256sum * ) > SHA256SUMS.txt
           cat SHA256SUMS.txt
       - uses: softprops/action-gh-release@v2
         with:
           files: |
-            frames-linux/bsod
-            frames-windows/bsod.exe
-            frames-macos/bsod
+            dist/*
             SHA256SUMS.txt
           generate_release_notes: true

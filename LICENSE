@@ -19,10 +19,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
--- 
-
-This project reproduces the visual appearance of a Windows bugcheck screen for
-research, testing and UI-prototyping purposes. "Windows" and the Windows boot
-fonts are trademarks and copyrighted works of Microsoft Corporation; no font
-data is distributed with this source tree.
