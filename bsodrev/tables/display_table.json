@@ -1,0 +1,212 @@
+{
+ "symbol": "qword_140429ED0",
+ "va": "0x140429ED0",
+ "layout": "5 rows x 18 dwords, addressed as 9 qwords per row",
+ "addressing": {
+  "low32": "dword[2k]",
+  "high32": "dword[2k+1]",
+  "expr": "qword_140429ED0[9*row+k]"
+ },
+ "cell_to_em": "em = cell * upem / (asc - desc)",
+ "fields": [
+  {
+   "i": 0,
+   "name": "cell_small"
+  },
+  {
+   "i": 1,
+   "name": "cell_info1"
+  },
+  {
+   "i": 2,
+   "name": "cell_body"
+  },
+  {
+   "i": 3,
+   "name": "cell_face"
+  },
+  {
+   "i": 4,
+   "name": "margin_left"
+  },
+  {
+   "i": 5,
+   "name": "margin_top"
+  },
+  {
+   "i": 6,
+   "name": "text_width"
+  },
+  {
+   "i": 7,
+   "name": "dead_d7"
+  },
+  {
+   "i": 8,
+   "name": "text_indent"
+  },
+  {
+   "i": 9,
+   "name": "gap_face"
+  },
+  {
+   "i": 10,
+   "name": "line_extra"
+  },
+  {
+   "i": 11,
+   "name": "stride"
+  },
+  {
+   "i": 12,
+   "name": "dead_d12"
+  },
+  {
+   "i": 13,
+   "name": "qr_dy"
+  },
+  {
+   "i": 14,
+   "name": "qr_gap"
+  },
+  {
+   "i": 15,
+   "name": "info_dy"
+  },
+  {
+   "i": 16,
+   "name": "thr_w"
+  },
+  {
+   "i": 17,
+   "name": "thr_h"
+  }
+ ],
+ "rows": [
+  {
+   "row": 0,
+   "display_class": 0,
+   "threshold": "<=640x480",
+   "values": [
+    18,
+    22,
+    26,
+    120,
+    80,
+    45,
+    470,
+    185,
+    7,
+    3,
+    1,
+    20,
+    30,
+    40,
+    10,
+    34,
+    0,
+    0
+   ]
+  },
+  {
+   "row": 1,
+   "display_class": 1,
+   "threshold": ">=641x481",
+   "values": [
+    18,
+    22,
+    32,
+    160,
+    105,
+    60,
+    510,
+    250,
+    10,
+    5,
+    2,
+    22,
+    40,
+    44,
+    15,
+    38,
+    641,
+    481
+   ]
+  },
+  {
+   "row": 2,
+   "display_class": 2,
+   "threshold": ">=1024x768",
+   "values": [
+    18,
+    22,
+    40,
+    200,
+    135,
+    75,
+    860,
+    310,
+    12,
+    6,
+    2,
+    24,
+    50,
+    48,
+    17,
+    42,
+    1024,
+    768
+   ]
+  },
+  {
+   "row": 3,
+   "display_class": 3,
+   "threshold": ">=1920x1080",
+   "values": [
+    24,
+    30,
+    56,
+    280,
+    190,
+    105,
+    980,
+    440,
+    17,
+    8,
+    3,
+    34,
+    70,
+    68,
+    20,
+    60,
+    1920,
+    1080
+   ]
+  },
+  {
+   "row": 4,
+   "display_class": 4,
+   "threshold": ">=2560x1440",
+   "values": [
+    34,
+    40,
+    72,
+    360,
+    245,
+    135,
+    1250,
+    610,
+    22,
+    11,
+    4,
+    49,
+    90,
+    98,
+    25,
+    86,
+    2560,
+    1440
+   ]
+  }
+ ]
+}

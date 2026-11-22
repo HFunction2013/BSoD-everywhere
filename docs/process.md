@@ -1,4 +1,30 @@
-# How this was reverse engineered
+# Reverse-engineering process — from `ntoskrnl.exe` to a 1:1 frame
+
+This is the whole workflow, written so somebody else can redo it from scratch.
+Everything referenced here lives in this repo:
+
+```
+docs/process.md          this file: method, order of work, pitfalls
+docs/display_table.md    the 5x18 table and what each field does
+docs/rasterizer.md       Rasp* call graph and what src/ras.c implements
+bsodrev/scripts/         the IDA scripts actually used (run them as-is)
+bsodrev/functions/       pseudo-C of every decisive function, per subsystem
+bsodrev/tables/          table as CSV + JSON, ready to diff
+bsodrev/assets/          QR matrix, text resource offsets, font acceptance test
+src/                     the C11 port of every finding above
+```
+
+Fast path (about ten minutes on a machine with IDA and the boot fonts):
+
+1. `idat64 -B -A ntoskrnl.exe` (pass 1: build the database)
+2. `idat64 -A -S bsodrev/scripts/ida_dump.py ntoskrnl.exe.i64` (pass 2: dump)
+3. `idat64 -A -S bsodrev/scripts/ida_xref_table.py ntoskrnl.exe.i64`
+   -> `xref_table.txt` proves which table fields are live
+4. read `bsodrev/functions/*.md` next to the dumps; the arithmetic there is the
+   contract the C port implements
+5. `make && ./bsod --size 1920x1080 --dump-layout --font <boot face> --render x.bmp`
+   and diff the printed coordinates against `bsodrev/tables/display_table.csv`
+6. compare the frame against the real screen — geometry first, glyphs second
 
 Target: `C:\Windows\System32\ntoskrnl.exe`, version **10.0.18362.2274**
 (Windows 10 1903), image base `0x140000000`. The binary ships with PDB names, so

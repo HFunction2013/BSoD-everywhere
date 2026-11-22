@@ -1,0 +1,19 @@
+Screen strings as UTF-16LE literals inside ntoskrnl 10.0.18362.2274.
+Offsets are file offsets; the VA is 0x140000000 + RVA of the .rdata section.
+
+0x3a03e0  We're just collecting some error info, and then we'll restart for you.
+0x3a0470  We're just collecting some error info, and then you can restart.
+0x3a0500  Your PC ran into a problem and needs to restart.
+0x3a0570  If you call a support person, give them this info:
+0x3a0650  For more information about this issue and possible fixes, visit
+0x3a06e0  https://www.windows.com/stopcode
+0x3a0728  What failed:
+0x3a0748  Stop Code:
+0x3a0788  0% complete  (format "%u%% complete", the '%' is its own glyph)
+
+The sad face ":(" is a display string resource, descriptor VA 0x140373770
+(0x140376468 on the Insider branch, whose draw call passes a1 == 456 and
+switches the background to #246F24).
+
+Grepping these offsets out of the file is how the text side was confirmed
+without OCR: the literals are plain UTF-16 with a 0 terminator.

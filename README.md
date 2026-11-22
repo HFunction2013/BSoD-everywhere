@@ -8,7 +8,9 @@ Everything — coordinates, font sizes, line strides, wrapping, the progress lin
 the QR code, the clear colour — was reverse engineered from
 `ntoskrnl.exe` (`10.0.18362.2274`) instead of eyeballing a screenshot.
 The whole process, including the IDA scripts and the decompiled functions, is in
-[`docs/`](docs/).
+[`docs/`](docs/) — start with
+[`docs/process.md`](docs/process.md); the raw material (IDA scripts, per-function
+pseudo-C, table dumps, QR matrix) is in [`bsodrev/`](bsodrev/).
 
 ```
    #####                                 size: ~43 KB (Linux, -O2)
@@ -157,7 +159,7 @@ MIT — see [LICENSE](LICENSE).
   对 boot 字体等于 `0.7519×cell`。`d7`/`d12` 经全量 xref 证实无人读取。
 * **字体不打包**：Windows 上自动用 `C:\Windows\Boot\Fonts\segoe_slboot.ttf`（这才是
   `BgpFoInitialize` 真正加载的那一版），其它平台请 `--font` 指过去，否则换行会不同。
-* 逆向全过程、显示表字段语义、栅格器对照见 [`docs/`](docs/)。
+* 逆向全过程见 [`docs/process.md`](docs/process.md)；IDA 脚本、逐函数伪 C、表数据、QR 矩阵见 [`bsodrev/`](bsodrev/)。
 
 ## Trademarks
 

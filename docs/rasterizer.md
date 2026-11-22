@@ -21,7 +21,7 @@ BgpDisplayCharacterEx            0x140348B34
 ```
 
 `BgpRasInitializeRasterizer` (0x140A409A0) primes the font object (see
-[reverse-engineering.md](reverse-engineering.md) §4) and sets the cache capacity
+[process.md](process.md) §4) and sets the cache capacity
 `dword_14042BF10 = 100`.
 
 ## The two formulas that matter
@@ -95,7 +95,7 @@ something looks off:
 font           : upem=2048 asc=2210 desc=-514  cell/em=1.3298
 sad face       : (190,105) cell=280 em=210.5
 body           : x=207 right=1187 cell=56 em=42.1 top=393 stride=59
-progress       : (207,660) cell=56
-qr             : (207,762) size=214   [d7=440 d12=70 are dead fields]
-info           : (441,754) cell1=30 cell0=24 stride=34
+progress       : (207,601) cell=56
+qr             : (207,703) size=214   [d7=440 d12=70 are dead fields]
+info           : (441,695) cell1=30 cell0=24 stride=34
 ```
