@@ -2,19 +2,43 @@
 #if defined(_WIN32)
 #include "bsod.h"
 #include <windows.h>
+#include <stdlib.h>
 #include <string.h>
 
 static Canvas *g_cv;
 static BITMAPINFO g_bi;
+static unsigned char *g_bgr;              /* DIB copy: 24bpp BI_RGB is BGR */
+static int g_bgr_w, g_bgr_h;
+
+/* A 24-bit BI_RGB DIB stores pixels as B,G,R in memory; our canvas keeps
+ * R,G,B. Feeding the canvas straight to StretchDIBits swaps red and blue,
+ * which turns #0078D7 into #D77800 (orange). */
+static int ensure_bgr(const Canvas *c) {
+    int i, n;
+    if (g_bgr && g_bgr_w == c->w && g_bgr_h == c->h) return 1;
+    free(g_bgr);
+    n = c->w * c->h;
+    g_bgr = (unsigned char *)malloc((size_t)n * 3);
+    if (!g_bgr) { g_bgr_w = g_bgr_h = 0; return 0; }
+    for (i = 0; i < n; i++) {
+        const unsigned char *s = c->px + (size_t)i * 3;
+        g_bgr[i * 3 + 0] = s[2];            /* B */
+        g_bgr[i * 3 + 1] = s[1];            /* G */
+        g_bgr[i * 3 + 2] = s[0];            /* R */
+    }
+    g_bgr_w = c->w;
+    g_bgr_h = c->h;
+    return 1;
+}
 
 static LRESULT CALLBACK wndproc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
     switch (msg) {
     case WM_PAINT: {
         PAINTSTRUCT ps;
         HDC dc = BeginPaint(h, &ps);
-        if (g_cv) {
+        if (g_cv && ensure_bgr(g_cv)) {
             StretchDIBits(dc, 0, 0, g_cv->w, g_cv->h, 0, 0, g_cv->w, g_cv->h,
-                          g_cv->px, &g_bi, DIB_RGB_COLORS, SRCCOPY);
+                          g_bgr, &g_bi, DIB_RGB_COLORS, SRCCOPY);
         }
         EndPaint(h, &ps);
         return 0;

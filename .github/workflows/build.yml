@@ -52,6 +52,14 @@ jobs:
           .\bsod.exe --size 1920x1080 --progress 37 --render bsod_stop.bmp `
             --stop-code IRQL_NOT_LESS_OR_EQUAL --driver nvlddmkm.sys `
             --params 0x0000000000000000,0x0000000000000002,0x0000000000000001,0xFFFFF80100000000
+      - name: sanity check colour
+        shell: pwsh
+        run: |
+          # 24bpp BMP: pixel 0 sits at offset 54, stored as B,G,R. Background
+          # must be #0078D7 -> B=0xD7 G=0x78 R=0x00 (a swapped image is 0xD77800).
+          $b = [IO.File]::ReadAllBytes("bsod_1920x1080.bmp")
+          "pixel0 B={0:X2} G={1:X2} R={2:X2}" -f $b[54], $b[55], $b[56]
+          if ($b[54] -ne 0xD7 -or $b[55] -ne 0x78 -or $b[56] -ne 0x00) { throw "background colour is wrong (red/blue swapped?)" }
       - name: convert frames to png
         continue-on-error: true
         shell: pwsh
