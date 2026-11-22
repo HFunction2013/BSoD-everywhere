@@ -53,10 +53,13 @@ jobs:
             --stop-code IRQL_NOT_LESS_OR_EQUAL --driver nvlddmkm.sys `
             --params 0x0000000000000000,0x0000000000000002,0x0000000000000001,0xFFFFF80100000000
       - name: convert frames to png
+        continue-on-error: true
         shell: pwsh
         run: |
+          python -m pip install --quiet --disable-pip-version-check pillow
           python -c "from PIL import Image; import glob; [Image.open(f).save(f.replace('.bmp','.png')) for f in glob.glob('bsod_*.bmp')]"
       - name: upload frames
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: frames-windows
