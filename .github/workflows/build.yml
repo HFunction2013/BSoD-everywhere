@@ -103,5 +103,6 @@ jobs:
           files: |
             frames-linux/bsod
             frames-windows/bsod.exe
+            frames-macos/bsod
             SHA256SUMS.txt
           generate_release_notes: true
