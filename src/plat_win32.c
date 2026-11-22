@@ -4,11 +4,13 @@
 #include <windows.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 static Canvas *g_cv;
 static BITMAPINFO g_bi;
 static unsigned char *g_bgr;              /* DIB copy: 24bpp BI_RGB is BGR */
 static int g_bgr_w, g_bgr_h;
+static int g_dw, g_dh;                    /* client (possibly scaled) size */
 
 /* A 24-bit BI_RGB DIB stores pixels as B,G,R in memory; our canvas keeps
  * R,G,B. Feeding the canvas straight to StretchDIBits swaps red and blue,
@@ -31,13 +33,25 @@ static int ensure_bgr(const Canvas *c) {
     return 1;
 }
 
+void plat_screen_size(int *w, int *h) {
+    RECT r;
+    if (SystemParametersInfoW(SPI_GETWORKAREA, 0, &r, 0)) {
+        *w = r.right - r.left;
+        *h = r.bottom - r.top;
+    } else {
+        *w = GetSystemMetrics(SM_CXSCREEN);
+        *h = GetSystemMetrics(SM_CYSCREEN);
+    }
+}
+
 static LRESULT CALLBACK wndproc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
     switch (msg) {
     case WM_PAINT: {
         PAINTSTRUCT ps;
         HDC dc = BeginPaint(h, &ps);
         if (g_cv && ensure_bgr(g_cv)) {
-            StretchDIBits(dc, 0, 0, g_cv->w, g_cv->h, 0, 0, g_cv->w, g_cv->h,
+            /* dest = fitted client size; StretchDIBits scales the source */
+            StretchDIBits(dc, 0, 0, g_dw, g_dh, 0, 0, g_cv->w, g_cv->h,
                           g_bgr, &g_bi, DIB_RGB_COLORS, SRCCOPY);
         }
         EndPaint(h, &ps);
@@ -58,6 +72,8 @@ int plat_show(Canvas *c, const char *title) {
     WNDCLASSA wc;
     HWND h;
     MSG msg;
+    int aw, ah;
+    float s;
 
     if (!registered) {
         memset(&wc, 0, sizeof(wc));
@@ -70,6 +86,19 @@ int plat_show(Canvas *c, const char *title) {
         registered = 1;
     }
 
+    /* Fit the client area to the work area, preserving aspect ratio.
+     * ntoskrnl renders at the real framebuffer resolution; here the canvas
+     * keeps its own resolution and the blit scales down only if needed. */
+    plat_screen_size(&aw, &ah);
+    g_dw = c->w;
+    g_dh = c->h;
+    if (aw > 0 && ah > 0 && (c->w > aw || c->h > ah)) {
+        s = (float)aw / c->w;
+        if ((float)ah / c->h < s) s = (float)ah / c->h;
+        g_dw = (int)(c->w * s + 0.5f);
+        g_dh = (int)(c->h * s + 0.5f);
+    }
+
     memset(&g_bi, 0, sizeof(g_bi));
     g_bi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
     g_bi.bmiHeader.biWidth = c->w;
@@ -80,11 +109,11 @@ int plat_show(Canvas *c, const char *title) {
     g_cv = c;
 
     h = CreateWindowExA(0, "BsodEverywhere", title, WS_OVERLAPPEDWINDOW | WS_VISIBLE,
-                        0, 0, c->w, c->h, 0, 0, GetModuleHandle(0), 0);
+                        0, 0, g_dw, g_dh, 0, 0, GetModuleHandle(0), 0);
     if (!h) return 0;
-    /* fit the client area exactly to the canvas */
+    /* fit the client area exactly to the chosen (possibly scaled) size */
     {
-        RECT r = { 0, 0, c->w, c->h };
+        RECT r = { 0, 0, g_dw, g_dh };
         AdjustWindowRect(&r, WS_OVERLAPPEDWINDOW, FALSE);
         SetWindowPos(h, 0, 0, 0, r.right - r.left, r.bottom - r.top, SWP_NOMOVE | SWP_NOZORDER);
     }

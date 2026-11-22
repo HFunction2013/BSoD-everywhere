@@ -3,4 +3,5 @@
 #if !defined(_WIN32) && !defined(__linux__) && !defined(__unix__)
 #include "bsod.h"
 int plat_show(Canvas *c, const char *title) { (void)c; (void)title; return 0; }
+void plat_screen_size(int *w, int *h) { *w = 0; *h = 0; }
 #endif

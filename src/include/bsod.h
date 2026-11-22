@@ -87,4 +87,8 @@ int out_write(const Canvas *c, const char *path);   /* dispatch on extension */
 /* Paints the canvas once. Returns 0 if no window backend is available. */
 int plat_show(Canvas *c, const char *title);
 
+/* Available screen work area in pixels (client area, no taskbar).
+ * Returns 0,0 on platforms without a display. */
+void plat_screen_size(int *w, int *h);
+
 #endif /* BSOD_H */

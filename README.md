@@ -114,8 +114,9 @@ cl /O1 /Isrc\include src\*.c /Fe:bsod.exe /link user32.lib gdi32.lib
 ## Usage
 
 ```bash
-bsod                                  # window at 1920x1080
+bsod                                  # window at the real screen size
 bsod --size 1024x768                  # other display class
+bsod --size 1920x1080                 # oversized: window scales to fit the work area
 bsod --progress 37 --stop-code IRQL_NOT_LESS_OR_EQUAL
 bsod --driver nvlddmkm.sys --params 0x0,0x2,0x1,0xFFFFF80100000000
 bsod --no-qr --dark --insider         # variants
@@ -123,6 +124,11 @@ bsod --dump-layout --render out.ppm   # print every computed coordinate
 ```
 
 `Esc` / `q` closes the window.
+
+The window never grows past the screen: when no `--size` is given the canvas
+is sized to the real framebuffer (the same choice `BcpGetDisplayType` makes in
+the kernel), and an explicit larger size keeps its aspect ratio and is
+letter-boxed into the work area.
 
 ## Size
 

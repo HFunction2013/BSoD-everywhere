@@ -38,7 +38,7 @@ static void usage(void) {
 "BSoD-everywhere — 1:1 Windows 10 bugcheck screen, KB-sized, no deps\n"
 "\n"
 "usage: bsod [options]\n"
-"  --size WxH        canvas size, default 1920x1080 (chooses the display class)\n"
+"  --size WxH        canvas size; default = real screen size in a window, 1920x1080 offscreen\n"
 "  --render PATH     write PATH (.ppm or .bmp) instead of opening a window\n"
 "  --window          force the window backend\n"
 "  --font PATH       font file (default: the Windows boot face)\n"
@@ -80,7 +80,7 @@ int main(int argc, char **argv) {
     TtFont font;
     Canvas cv;
     const char *font_path = 0, *render = 0, *param_list = 0;
-    int i, want_window = 0, is_boot = 0;
+    int i, want_window = 0, is_boot = 0, explicit_size = 0;
 
     memset(&o, 0, sizeof(o));
     o.w = 1920;
@@ -91,7 +91,7 @@ int main(int argc, char **argv) {
     for (i = 1; i < argc; i++) {
         const char *a = argv[i];
         if (!strcmp(a, "--help") || !strcmp(a, "-h")) { usage(); return 0; }
-        else if (!strcmp(a, "--size") && i + 1 < argc) { if (!parse_size(argv[++i], &o.w, &o.h)) { fprintf(stderr, "bad --size\n"); return 2; } }
+        else if (!strcmp(a, "--size") && i + 1 < argc) { explicit_size = 1; if (!parse_size(argv[++i], &o.w, &o.h)) { fprintf(stderr, "bad --size\n"); return 2; } }
         else if (!strcmp(a, "--render") && i + 1 < argc) render = argv[++i];
         else if (!strcmp(a, "--font") && i + 1 < argc) font_path = argv[++i];
         else if (!strcmp(a, "--progress") && i + 1 < argc) o.progress = atoi(argv[++i]);
@@ -120,6 +120,12 @@ int main(int argc, char **argv) {
             p = comma + 1;
         }
         /* leak is fine: process ends right after the frame */
+    }
+
+    if (!render && !explicit_size) {
+        int sw, sh;
+        plat_screen_size(&sw, &sh);
+        if (sw > 0 && sh > 0) { o.w = sw; o.h = sh; }
     }
 
     if (!load_any(&font, font_path)) {
