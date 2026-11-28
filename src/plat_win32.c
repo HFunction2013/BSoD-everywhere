@@ -7,17 +7,22 @@
 #include <math.h>
 
 static Canvas *g_cv;
+static TtFont *g_f;
+static Opt *g_o;
+static BsodTick g_tick;
+static void *g_ctx;
 static BITMAPINFO g_bi;
 static unsigned char *g_bgr;              /* DIB copy: 24bpp BI_RGB is BGR */
 static int g_bgr_w, g_bgr_h;
 static int g_dw, g_dh;                    /* client (possibly scaled) size */
+static int g_dirty;
 
 /* A 24-bit BI_RGB DIB stores pixels as B,G,R in memory; our canvas keeps
  * R,G,B. Feeding the canvas straight to StretchDIBits swaps red and blue,
  * which turns #0078D7 into #D77800 (orange). */
 static int ensure_bgr(const Canvas *c) {
     int i, n;
-    if (g_bgr && g_bgr_w == c->w && g_bgr_h == c->h) return 1;
+    if (g_bgr && g_bgr_w == c->w && g_bgr_h == c->h && !g_dirty) return 1;
     free(g_bgr);
     n = c->w * c->h;
     g_bgr = (unsigned char *)malloc((size_t)n * 3);
@@ -30,6 +35,7 @@ static int ensure_bgr(const Canvas *c) {
     }
     g_bgr_w = c->w;
     g_bgr_h = c->h;
+    g_dirty = 0;
     return 1;
 }
 
@@ -44,8 +50,28 @@ void plat_screen_size(int *w, int *h) {
     }
 }
 
+void plat_screen_full(int *w, int *h) {
+    *w = GetSystemMetrics(SM_CXSCREEN);
+    *h = GetSystemMetrics(SM_CYSCREEN);
+}
+
+double plat_now_seconds(void) {
+    static LARGE_INTEGER freq;
+    static int init;
+    LARGE_INTEGER c;
+    if (!init) { QueryPerformanceFrequency(&freq); init = 1; }
+    QueryPerformanceCounter(&c);
+    return (double)c.QuadPart / (double)freq.QuadPart;
+}
+
 static LRESULT CALLBACK wndproc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
     switch (msg) {
+    case WM_TIMER:
+        if (g_tick && g_cv) {
+            if (g_tick(g_cv, g_f, g_o, g_ctx)) g_dirty = 1;
+            InvalidateRect(h, 0, FALSE);
+        }
+        return 0;
     case WM_PAINT: {
         PAINTSTRUCT ps;
         HDC dc = BeginPaint(h, &ps);
@@ -67,13 +93,14 @@ static LRESULT CALLBACK wndproc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
     return DefWindowProc(h, msg, wp, lp);
 }
 
-int plat_show(Canvas *c, const char *title) {
+int plat_show(Canvas *c, TtFont *f, Opt *o, BsodTick tick, void *ctx) {
     static int registered;
     WNDCLASSA wc;
     HWND h;
     MSG msg;
     int aw, ah;
     float s;
+    DWORD style;
 
     if (!registered) {
         memset(&wc, 0, sizeof(wc));
@@ -86,17 +113,34 @@ int plat_show(Canvas *c, const char *title) {
         registered = 1;
     }
 
-    /* Fit the client area to the work area, preserving aspect ratio.
-     * ntoskrnl renders at the real framebuffer resolution; here the canvas
-     * keeps its own resolution and the blit scales down only if needed. */
-    plat_screen_size(&aw, &ah);
-    g_dw = c->w;
-    g_dh = c->h;
-    if (aw > 0 && ah > 0 && (c->w > aw || c->h > ah)) {
-        s = (float)aw / c->w;
-        if ((float)ah / c->h < s) s = (float)ah / c->h;
-        g_dw = (int)(c->w * s + 0.5f);
-        g_dh = (int)(c->h * s + 0.5f);
+    g_cv = c;
+    g_f = f;
+    g_o = o;
+    g_tick = tick;
+    g_ctx = ctx;
+    g_dirty = 1;
+
+    if (o->fullscreen) {
+        /* ntoskrnl paints the whole framebuffer: borderless popup over the
+         * full monitor, ignoring the taskbar work area. */
+        plat_screen_full(&aw, &ah);
+        g_dw = c->w;
+        g_dh = c->h;
+        style = WS_POPUP | WS_VISIBLE;
+    } else {
+        /* Fit the client area to the work area, preserving aspect ratio.
+         * The canvas keeps its own resolution and the blit scales down only
+         * if needed. */
+        plat_screen_size(&aw, &ah);
+        g_dw = c->w;
+        g_dh = c->h;
+        if (aw > 0 && ah > 0 && (c->w > aw || c->h > ah)) {
+            s = (float)aw / c->w;
+            if ((float)ah / c->h < s) s = (float)ah / c->h;
+            g_dw = (int)(c->w * s + 0.5f);
+            g_dh = (int)(c->h * s + 0.5f);
+        }
+        style = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
     }
 
     memset(&g_bi, 0, sizeof(g_bi));
@@ -106,23 +150,25 @@ int plat_show(Canvas *c, const char *title) {
     g_bi.bmiHeader.biPlanes = 1;
     g_bi.bmiHeader.biBitCount = 24;
     g_bi.bmiHeader.biCompression = BI_RGB;
-    g_cv = c;
 
-    h = CreateWindowExA(0, "BsodEverywhere", title, WS_OVERLAPPEDWINDOW | WS_VISIBLE,
+    h = CreateWindowExA(0, "BsodEverywhere", "Windows", style,
                         0, 0, g_dw, g_dh, 0, 0, GetModuleHandle(0), 0);
     if (!h) return 0;
-    /* fit the client area exactly to the chosen (possibly scaled) size */
-    {
+    if (!o->fullscreen) {
+        /* fit the client area exactly to the chosen (possibly scaled) size */
         RECT r = { 0, 0, g_dw, g_dh };
         AdjustWindowRect(&r, WS_OVERLAPPEDWINDOW, FALSE);
         SetWindowPos(h, 0, 0, 0, r.right - r.left, r.bottom - r.top, SWP_NOMOVE | SWP_NOZORDER);
     }
     ShowWindow(h, SW_SHOW);
     UpdateWindow(h);
+    if (tick) SetTimer(h, 1, 50, NULL);
+
     while (GetMessage(&msg, 0, 0, 0)) {
         TranslateMessage(&msg);
         DispatchMessage(&msg);
     }
+    KillTimer(h, 1);
     return 1;
 }
 

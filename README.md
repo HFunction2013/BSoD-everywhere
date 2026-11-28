@@ -13,7 +13,7 @@ The whole process, including the IDA scripts and the decompiled functions, is in
 pseudo-C, table dumps, QR matrix) is in [`bsodrev/`](bsodrev/).
 
 ```
-   #####                                 size: ~43 KB (Linux, -O2)
+   #####                                 size: ~60 KB (Linux, -Os, stripped)
    #   #    :(                            no libs beyond libc + libX11/libgdi32
    #####                                 same pixels on every OS
 ```
@@ -115,9 +115,13 @@ cl /O1 /Isrc\include src\*.c /Fe:bsod.exe /link user32.lib gdi32.lib
 
 ```bash
 bsod                                  # window at the real screen size
+bsod -f                               # --full-screen: borderless full-monitor window
 bsod --size 1024x768                  # other display class
 bsod --size 1920x1080                 # oversized: window scales to fit the work area
 bsod --progress 37 --stop-code IRQL_NOT_LESS_OR_EQUAL
+bsod --stop-code 0xA                  # hex code: table lookup; miss -> 0x0000000A
+bsod --complete-seconds 30            # animate: reach 100% after 30 s
+bsod --per-percent 0.3                # animate: spend 0.3 s on every 1%
 bsod --driver nvlddmkm.sys --params 0x0,0x2,0x1,0xFFFFF80100000000
 bsod --no-qr --dark --insider         # variants
 bsod --dump-layout --render out.ppm   # print every computed coordinate
@@ -125,18 +129,28 @@ bsod --dump-layout --render out.ppm   # print every computed coordinate
 
 `Esc` / `q` closes the window.
 
+`--stop-code` accepts either a friendly name or a hex literal (`0x` optional,
+1–8 digits). A code found in the kernel's embedded message table shows its
+name; an unknown code falls back to the kernel's own `0x%08x` form, e.g.
+`0xdeadbeef`. The 429-entry table was extracted from the `ntoskrnl.exe`
+`RT_MESSAGETABLE` (Type 11, ID 1) — see [`docs/process.md`](docs/process.md) §11.
+
 The window never grows past the screen: when no `--size` is given the canvas
 is sized to the real framebuffer (the same choice `BcpGetDisplayType` makes in
 the kernel), and an explicit larger size keeps its aspect ratio and is
-letter-boxed into the work area.
+letter-boxed into the work area. `--full-screen` paints the whole monitor
+directly, the way the kernel paints the framebuffer.
 
 ## Size
 
 | build | bytes |
 |---|---|
-| Linux `-O2`, unstripped | ~43 KB |
-| Linux `make tiny` | ~20 KB |
+| Linux `-O2`, unstripped | ~73 KB |
+| Linux `make tiny` | ~60 KB |
 | Windows MSVC `/O1` | see the CI artifact |
+
+The ~12 KB of strings is the embedded 429-entry bugcheck name table extracted
+from the kernel message resource; the renderer itself stays in the tens of KB.
 
 No runtime dependencies beyond `libc` (`libm`), and `libX11` on Linux or
 `user32/gdi32` on Windows — both already part of the OS.

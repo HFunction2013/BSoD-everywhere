@@ -43,6 +43,8 @@ test: $(BIN)
 	./$(BIN) --size 1920x1080 --render ref_stop.ppm --progress 37 \
 	    --stop-code IRQL_NOT_LESS_OR_EQUAL --driver nvlddmkm.sys \
 	    --params 0x0000000000000000,0x0000000000000002,0x0000000000000001,0xFFFFF80100000000
+	./$(BIN) --size 1920x1080 --render ref_hex.ppm --stop-code 0xA --progress 37
+	./$(BIN) --size 1920x1080 --render ref_hex_miss.ppm --stop-code 0xDEADBEEF
 
 clean:
 	rm -f $(BIN) *.ppm *.bmp probe probe2 probe.c probe2.c

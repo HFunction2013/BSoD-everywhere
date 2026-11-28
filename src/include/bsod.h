@@ -9,6 +9,8 @@
 #ifndef BSOD_H
 #define BSOD_H
 
+#include <stdint.h>
+
 /* ---------------------------------------------------------------- TrueType */
 typedef struct {
     unsigned char *buf;
@@ -63,6 +65,7 @@ void cv_blit(Canvas *c, const Bitmap *bm, int x, int y, unsigned rgb);
 float tx_width(TtFont *f, const char *s, float em);
 void  tx_draw(Canvas *c, TtFont *f, const char *s, float em, int x, int base, unsigned rgb);
 int   tx_px(TtFont *f, const char *s, float em);   /* width, rounded */
+void  tx_reset_cache(void);   /* free cached glyph bitmaps between frames */
 
 /* ---------------------------------------------------------------- screen  */
 typedef struct {
@@ -74,6 +77,11 @@ typedef struct {
     int nparams;
     int no_qr, dark, insider; /* variants                         */
     int dump;                 /* print the computed layout        */
+    int fullscreen;           /* -f / --full-screen                */
+    double complete_secs;     /* >0: total seconds to reach 100%   */
+    double per_percent;       /* >0: seconds spent per 1%          */
+    uint32_t stop_code_val;   /* raw hex code when stop_code_hex   */
+    int stop_code_hex;        /* stop_code came from a hex literal */
 } Opt;
 
 int bsod_draw(Canvas *c, TtFont *f, const Opt *o);
@@ -84,11 +92,22 @@ int out_bmp(const Canvas *c, const char *path);
 int out_write(const Canvas *c, const char *path);   /* dispatch on extension */
 
 /* ---------------------------------------------------------------- platform */
-/* Paints the canvas once. Returns 0 if no window backend is available. */
-int plat_show(Canvas *c, const char *title);
+/* Per-frame callback for animated backends. Returns 1 to keep running.
+ * It redraws the canvas; the backend then blits it to the window. */
+typedef int (*BsodTick)(Canvas *c, TtFont *f, Opt *o, void *ctx);
+
+/* Paints the canvas and runs the event loop. `tick` may be NULL (one frame).
+ * Returns 0 if no window backend is available. */
+int plat_show(Canvas *c, TtFont *f, Opt *o, BsodTick tick, void *ctx);
 
 /* Available screen work area in pixels (client area, no taskbar).
  * Returns 0,0 on platforms without a display. */
 void plat_screen_size(int *w, int *h);
+
+/* Full monitor size in pixels (covers the taskbar / work area). */
+void plat_screen_full(int *w, int *h);
+
+/* Monotonic wall-clock seconds since an arbitrary epoch. */
+double plat_now_seconds(void);
 
 #endif /* BSOD_H */
