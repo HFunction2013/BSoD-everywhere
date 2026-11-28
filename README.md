@@ -179,6 +179,8 @@ MIT — see [LICENSE](LICENSE).
   对 boot 字体等于 `0.7519×cell`。`d7`/`d12` 经全量 xref 证实无人读取。
 * **字体不打包**：Windows 上自动用 `C:\Windows\Boot\Fonts\segoe_slboot.ttf`（这才是
   `BgpFoInitialize` 真正加载的那一版），其它平台请 `--font` 指过去，否则换行会不同。
+* **命令行**：`-f/--full-screen` 全屏；`--stop-code` 可传十六进制码（命中内置消息表显示名称，
+  未命中按内核格式回退 `0x%08x`）；`--complete-seconds` / `--per-percent` 按时间驱动进度动画。
 * 逆向全过程见 [`docs/process.md`](docs/process.md)；IDA 脚本、逐函数伪 C、表数据、QR 矩阵见 [`bsodrev/`](bsodrev/)。
 
 ## Trademarks
